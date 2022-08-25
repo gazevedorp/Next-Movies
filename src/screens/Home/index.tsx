@@ -1,44 +1,75 @@
 import React from 'react';
 import { useEffect } from 'react';
-import { Text, ActivityIndicator } from 'react-native';
+import { FlatList, ActivityIndicator } from 'react-native';
 
-import { useDispatch } from 'react-redux';
-import { clearUser } from '../../store/Actions/userActions';
 import api from '../../services/api'
 
 import {
     Container,
-    ButtonExit,
-    ButtonExitText
+    Title,
+    LineHeader,
+    Card,
+    CardImage,
+    CardTitle,
+
 } from './styles';
 import { useState } from 'react';
 
 interface IMovie {
     id: Int32Array,
     title: string,
+    poster_path: string
 }
 
-const Home = () => {
-    const dispatch = useDispatch();
-    const [onLoadingMovies, setLoadingMovies] = useState<boolean>(true)
-    const [movieList, setMovieList] = useState<IMovie[]>([])
+const Home = ({ navigation }) => {
+    const [onLoadingMovies, setLoadingMovies] = useState<boolean>(true);
+    const [movieList, setMovieList] = useState<IMovie[]>([]);
+    const [totalPages, setTotalPages] = useState<number>(0);
+    const [page, setPage] = useState<number>(1);
+    const baseUrlImg = "https://image.tmdb.org/t/p/w185";
+    const imageDefault = "https://thumbs.dreamstime.com/b/nenhum-sinal-de-imagem-dispon%C3%ADvel-isolado-em-fundo-branco-na-ilustra%C3%A7%C3%A3o-do-vetor-219198729.jpg";
 
-    const handleExit = () => {
-        dispatch(clearUser());
-    }
     const getMovies = async () => {
         try {
-            const response = await api.get<IMovie[]>("/upcoming?api_key=fe65f8e840e15d06c5c00bf13084da74&language=pt-BR&page=1")
+            const response = await api.get<IMovie[]>(`movie/upcoming?api_key=fe65f8e840e15d06c5c00bf13084da74&region=BR&language=pt-BR&page=${page}`)
             if (response) {
-                console.log(response.data.results)
-                setMovieList(response.data.results)
+                console.log(response.data.results.length);
+                if (page === 1) {
+                    setMovieList(response.data.results);
+                    setTotalPages(response.data.total_pages)
+                }
+                else {
+                    const temp = movieList.concat(response.data.results);
+                    setMovieList(temp);
+                }
                 setLoadingMovies(false);
             }
         }
         catch (e) {
-            console.log(e)
+            console.log(e);
             setLoadingMovies(false);
         }
+    }
+
+    const renderItem = ({ item }) => {
+        return (
+            <Card
+                key={item.id}
+                onPress={() => navigation.navigate("MovieDetails", { movie: item })}
+            >
+                <CardImage
+                    resizeMode="cover"
+                    source={{
+                        uri: item.poster_path ?
+                            `${baseUrlImg}${item.poster_path}` :
+                            imageDefault
+                    }}
+                />
+                <CardTitle >
+                    {item.title.toUpperCase()}
+                </CardTitle>
+            </Card>
+        )
     }
 
     useEffect(() => {
@@ -47,16 +78,37 @@ const Home = () => {
 
     return (
         <Container>
-            {onLoadingMovies ?
-                <ActivityIndicator color="#000" />
+            {onLoadingMovies && page === 1 ?
+                <ActivityIndicator color="#fff" />
                 :
-                movieList.map(movie => (
-                    <Text style={{ color: "#000" }} key={movie.id}>{movie.title}</Text>
-                ))
+                <FlatList
+                    contentContainerStyle={{ alignItems: "center" }}
+                    numColumns={2}
+                    data={movieList.filter(movie => !movie.adult)}
+                    renderItem={renderItem}
+                    keyExtractor={movie => movie.id}
+                    ListHeaderComponent={
+                        <>
+                            <Title>Próximos lançamentos</Title>
+                            <LineHeader />
+                        </>
+                    }
+                    ListHeaderComponentStyle={{ width: "100%" }}
+                    showsVerticalScrollIndicator={false}
+                    onEndReachedThreshold={0.2}
+                    onEndReached={() => {
+                        console.log(page, totalPages)
+                        if (totalPages >= page) {
+                            setLoadingMovies(true);
+                            setPage(page + 1);
+                            getMovies();
+                        }
+                    }}
+                />
             }
-            <ButtonExit onPress={handleExit}>
-                <ButtonExitText>Sair</ButtonExitText>
-            </ButtonExit>
+            {onLoadingMovies && page > 1 &&
+                <ActivityIndicator color="#fff" />
+            }
         </Container>
     );
 };

@@ -22,7 +22,7 @@ const SignIn = () => {
         <Container>
             <Title>NEXTMOVIES</Title>
             <Description>
-                SEU APLICATIVO DE CONSULTA DE FILMES GRÁTIS!
+                Fique por dentro dos próximos lançamentos e não perca nenhuma estréia!
             </Description>
             <Button onPress={handlePress}>
                 <ButtonText>Entrar</ButtonText>

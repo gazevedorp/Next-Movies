@@ -16,10 +16,10 @@ const persistConfig = {
   timeout: 0,
 };
 
-const persistedReducer = persistReducer(persistConfig, reducers);
+//const persistedReducer = persistReducer(persistConfig, reducers);
 
 export const store = configureStore({
-  reducer: persistedReducer,
+  reducer: reducers,
   middleware: getDefaultMiddleware({
     serializableCheck: false,
   }),
